@@ -19,6 +19,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::post('/transactions/store', [TransactionController::class, 'store'])->name('transactions.store');
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
