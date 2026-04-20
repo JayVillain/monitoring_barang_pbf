@@ -30,29 +30,41 @@ public function store(Request $request)
 
     $item = Item::findOrFail($request->item_id);
 
-    // 1. Logika BARANG KELUAR
+    // 1. LOGIKA BARANG KELUAR
     if ($request->tipe == 'keluar') {
         if ($item->stok < $request->jumlah) {
-            // Gunakan withErrors agar muncul pesan di tampilan
             return redirect()->back()->withErrors(['error' => 'Stok tidak mencukupi! Stok saat ini: ' . $item->stok]);
         }
         $item->stok -= $request->jumlah;
     } 
     
-    // 2. Logika BARANG KEMBALI (Fix Bug: Batasi pengembalian)
+    // 2. LOGIKA BARANG KEMBALI (FIX BUG)
     elseif ($request->tipe == 'kembali') {
-        // Logika: Barang kembali tidak boleh membuat stok melebihi batas tertentu 
-        // Atau simpelnya, kita asumsikan pengembalian harus divalidasi manual oleh Admin
+        // Hitung total barang yang pernah keluar
+        $totalKeluar = Transaction::where('item_id', $item->id)->where('tipe', 'keluar')->sum('jumlah');
+        
+        // Hitung total barang yang sudah pernah dikembalikan sebelumnya
+        $totalSudahKembali = Transaction::where('item_id', $item->id)->where('tipe', 'kembali')->sum('jumlah');
+
+        // Sisa barang yang masih di luar dan bisa dikembalikan
+        $maksimalKembali = $totalKeluar - $totalSudahKembali;
+
+        if ($request->jumlah > $maksimalKembali) {
+            return redirect()->back()->withErrors(['error' => 'Jumlah pengembalian tidak valid! Maksimal barang yang bisa kembali: ' . $maksimalKembali]);
+        }
+
         $item->stok += $request->jumlah;
     }
     
-    // 3. Logika BARANG MASUK
+    // 3. LOGIKA BARANG MASUK
     else {
         $item->stok += $request->jumlah;
     }
 
+    // Simpan perubahan stok ke tabel items
     $item->save();
 
+    // Catat riwayat ke tabel transactions
     Transaction::create([
         'item_id' => $request->item_id,
         'user_id' => Auth::id(),
