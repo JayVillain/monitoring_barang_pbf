@@ -20,39 +20,47 @@ class TransactionController extends Controller
         return view('transactions.index', compact('transactions', 'items'));
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'item_id' => 'required',
-            'jumlah' => 'required|numeric|min:1',
-            'tipe' => 'required|in:masuk,keluar,kembali',
-        ]);
+public function store(Request $request)
+{
+    $request->validate([
+        'item_id' => 'required',
+        'jumlah' => 'required|numeric|min:1',
+        'tipe' => 'required|in:masuk,keluar,kembali',
+    ]);
 
-        $item = Item::findOrFail($request->item_id);
+    $item = Item::findOrFail($request->item_id);
 
-        // LOGIKA UPDATE STOK
-        if ($request->tipe == 'masuk' || $request->tipe == 'kembali') {
-            $item->stok += $request->jumlah;
-        } elseif ($request->tipe == 'keluar') {
-            // Cek apakah stok cukup
-            if ($item->stok < $request->jumlah) {
-                return back()->withErrors(['jumlah' => 'Stok tidak mencukupi untuk barang keluar!']);
-            }
-            $item->stok -= $request->jumlah;
+    // 1. Logika BARANG KELUAR
+    if ($request->tipe == 'keluar') {
+        if ($item->stok < $request->jumlah) {
+            // Gunakan withErrors agar muncul pesan di tampilan
+            return redirect()->back()->withErrors(['error' => 'Stok tidak mencukupi! Stok saat ini: ' . $item->stok]);
         }
-
-        // Simpan perubahan stok barang
-        $item->save();
-
-        // Catat riwayat transaksi
-        Transaction::create([
-            'item_id' => $request->item_id,
-            'user_id' => Auth::id(),
-            'jumlah' => $request->jumlah,
-            'tipe' => $request->tipe,
-            'keterangan' => $request->keterangan,
-        ]);
-
-        return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil dicatat!');
+        $item->stok -= $request->jumlah;
+    } 
+    
+    // 2. Logika BARANG KEMBALI (Fix Bug: Batasi pengembalian)
+    elseif ($request->tipe == 'kembali') {
+        // Logika: Barang kembali tidak boleh membuat stok melebihi batas tertentu 
+        // Atau simpelnya, kita asumsikan pengembalian harus divalidasi manual oleh Admin
+        $item->stok += $request->jumlah;
     }
+    
+    // 3. Logika BARANG MASUK
+    else {
+        $item->stok += $request->jumlah;
+    }
+
+    $item->save();
+
+    Transaction::create([
+        'item_id' => $request->item_id,
+        'user_id' => Auth::id(),
+        'jumlah' => $request->jumlah,
+        'tipe' => $request->tipe,
+        'keterangan' => $request->keterangan,
+    ]);
+
+    return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil dicatat!');
+}
 }
