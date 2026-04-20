@@ -11,4 +11,7 @@ class Item extends Model
 
     // Kolom yang boleh diisi manual
     protected $fillable = ['kode_barang', 'nama_barang', 'stok', 'deskripsi'];
+    public function transactions() {
+    return $this->hasMany(Transaction::class);
+}
 }
