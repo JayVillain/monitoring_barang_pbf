@@ -42,7 +42,26 @@ class ItemController extends Controller
         $item->delete();
         return redirect()->route('items.index')->with('success', 'Barang berhasil dihapus!');
     }
+    // Menampilkan form edit
+public function edit(Item $item)
+{
+    if (Auth::user()->role !== 'admin') return abort(403);
+    return view('items.edit', compact('item'));
+}
 
-    // Bagian edit, show, update bisa dikosongkan saja di dalam class ini 
-    // atau dihapus jika tidak digunakan agar tidak bingung.
+// Menyimpan perubahan data barang
+public function update(Request $request, Item $item)
+{
+    if (Auth::user()->role !== 'admin') return abort(403);
+
+    $request->validate([
+        'kode_barang' => 'required|unique:items,kode_barang,' . $item->id,
+        'nama_barang' => 'required',
+        'stok' => 'required|numeric|min:0',
+    ]);
+
+    $item->update($request->all());
+
+    return redirect()->route('items.index')->with('success', 'Data barang berhasil diubah!');
+}
 }
