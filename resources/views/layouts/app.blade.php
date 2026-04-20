@@ -173,7 +173,7 @@
 </head>
 <body>
     <div class="sidebar">
-        <h3>📦 StockMaster</h3>
+        <h3> StockMaster</h3>
         
         <div class="user-info">
             <p>{{ Auth::user()->name }}</p>
