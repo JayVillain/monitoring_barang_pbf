@@ -117,7 +117,7 @@
 <body>
 
     <div class="login-card">
-        <div class="logo">📦 StockMaster</div>
+        <div class="logo"> StockMaster</div>
         <h2>Selamat Datang Kembali</h2>
 
         @if($errors->any())
